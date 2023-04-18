@@ -1,11 +1,9 @@
 package ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,11 +11,28 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import backend.ServerConnector
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.launch
 import navigation.NavController
 import navigation.Screen
 
 @Composable
 fun SignUp(navController: NavController) {
+
+    val coroutineScope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) }
+
+    val scaffoldState = rememberScaffoldState()
+
+    val channel = Channel<String>(Channel.CONFLATED)
+
+    var serverIp by remember {
+        mutableStateOf("")
+    }
+
     var username by remember {
         mutableStateOf("")
     }
@@ -30,48 +45,93 @@ fun SignUp(navController: NavController) {
         mutableStateOf("")
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp, alignment = Alignment.CenterVertically)
-    ) {
-        OutlinedTextField(
-            value = username,
-            onValueChange = { username = it },
-            label = {
-                Text("Nom d'utilisateur")
-            }
-        )
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = {
-                Text("Adresse email")
-            }
-        )
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = {
-                Text("Mot de passe")
-            }
-        )
-
-        Button(onClick = { navController.navigate(Screen.Home.name) }) {
-            Text("S'inscrire")
+    LaunchedEffect(channel) {
+        channel.consumeAsFlow().collectLatest { message ->
+            scaffoldState.snackbarHostState.showSnackbar(message = message)
         }
+    }
 
-        Spacer(modifier = Modifier.height(2.dp))
+    Scaffold(scaffoldState = scaffoldState) {
+        Box(modifier = Modifier.fillMaxSize().padding(it)) {
+            AnimatedVisibility(visible = isLoading, modifier = Modifier.align(Alignment.Center)) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
+            Column(
+                modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp, alignment = Alignment.CenterVertically)
+            ) {
+                OutlinedTextField(
+                    value = serverIp,
+                    onValueChange = { serverIp = it },
+                    label = {
+                        Text("Adresse Ip du Serveur")
+                    }
+                )
 
-        Text(
-            text = buildAnnotatedString {
-                append("Vous avez un compte ? ")
-                withStyle(TextStyle(color = MaterialTheme.colors.primary).toSpanStyle()) {
-                    append("Se connecter ")
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = {
+                        Text("Nom d'utilisateur")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = {
+                        Text("Adresse email")
+                    }
+                )
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = {
+                        Text("Mot de passe")
+                    }
+                )
+
+                Button(
+                    enabled = !isLoading,
+                    onClick = {
+                        isLoading = true
+                        try {
+                            ServerConnector().connectToServer(
+                                serverIp = serverIp,
+                                email = email,
+                                onSuccess = {
+                                    isLoading = false
+                                    navController.navigate(Screen.Home.name)
+                                }, onError = { throwable ->
+                                    isLoading = false
+                                    coroutineScope.launch {
+                                        channel.send(throwable.message ?: "Erreur")
+                                    }
+                                })
+                        } catch (t: Throwable) {
+                            isLoading = false
+                            coroutineScope.launch {
+                                channel.send(t.message ?: "Erreur")
+                            }
+                        }
+                    }
+                ) {
+                    Text("S'inscrire")
                 }
-            },
-            modifier = Modifier.clickable { navController.navigate(Screen.SignIn.name) }
-        )
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Text(
+                    text = buildAnnotatedString {
+                        append("Vous avez un compte ? ")
+                        withStyle(TextStyle(color = MaterialTheme.colors.primary).toSpanStyle()) {
+                            append("Se connecter ")
+                        }
+                    },
+                    modifier = Modifier.clickable { navController.navigate(Screen.SignIn.name) }
+                )
+            }
+        }
     }
 }

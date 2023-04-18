@@ -10,9 +10,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 enum class Screen(
     val label: String,
 ) {
-    ServerIP(
-        label = "Ip du serveur",
-    ),
     Home(
         label = "Notifications",
     ),
