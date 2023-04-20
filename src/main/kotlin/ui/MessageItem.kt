@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun MessageItem(isSentByMe: Boolean = false) {
+fun MessageItem(message: String,isSentByMe: Boolean = false) {
     val arrangement = if (isSentByMe) {
         Arrangement.End
     } else {
@@ -34,7 +34,7 @@ fun MessageItem(isSentByMe: Boolean = false) {
                     .padding(16.dp)
                     .wrapContentHeight()
             ) {
-                Text("Bonjour le monde", color = Color.Black)
+                Text(text = message, color = Color.Black)
             }
         }
 

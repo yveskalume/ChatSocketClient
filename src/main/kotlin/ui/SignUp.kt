@@ -1,5 +1,7 @@
 package ui
 
+import Client
+import ServerConnectionListener
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,7 +13,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import backend.ServerConnector
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -96,25 +97,23 @@ fun SignUp(navController: NavController) {
                     enabled = !isLoading,
                     onClick = {
                         isLoading = true
-                        try {
-                            ServerConnector().connectToServer(
-                                serverIp = serverIp,
-                                email = email,
-                                onSuccess = {
+                        Client.connectToServer(
+                            serverIp.trim(),
+                            email.trim(),
+                            object : ServerConnectionListener {
+                                override fun onSuccess() {
                                     isLoading = false
                                     navController.navigate(Screen.Home.name)
-                                }, onError = { throwable ->
+                                }
+
+                                override fun onError(throwable: Throwable?) {
                                     isLoading = false
                                     coroutineScope.launch {
-                                        channel.send(throwable.message ?: "Erreur")
+                                        channel.send(throwable?.message ?: "Erreur")
                                     }
-                                })
-                        } catch (t: Throwable) {
-                            isLoading = false
-                            coroutineScope.launch {
-                                channel.send(t.message ?: "Erreur")
+                                }
                             }
-                        }
+                        )
                     }
                 ) {
                     Text("S'inscrire")

@@ -3,6 +3,7 @@ package ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import logic.MessageDataSource
 import navigation.NavController
 
 @Composable
@@ -20,6 +22,13 @@ fun HomeScreen(navController: NavController) {
     var messageText by remember {
         mutableStateOf("")
     }
+
+    val messages = MessageDataSource.messages
+
+    LaunchedEffect(Unit) {
+        MessageDataSource.getMessages()
+    }
+
     Scaffold(topBar = {
         TopAppBar(
             navigationIcon = {
@@ -51,43 +60,8 @@ fun HomeScreen(navController: NavController) {
                     modifier = Modifier.padding(8.dp).weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    item {
-                        MessageItem()
-                    }
-                    item {
-                        MessageItem()
-                    }
-
-                    item {
-                        MessageItem(isSentByMe = true)
-                    }
-
-                    item {
-                        MessageItem()
-                    }
-
-                    item {
-                        MessageItem(isSentByMe = true)
-                    }
-
-                    item {
-                        MessageItem()
-                    }
-
-                    item {
-                        MessageItem(isSentByMe = true)
-                    }
-
-                    item {
-                        MessageItem(isSentByMe = true)
-                    }
-
-                    item {
-                        MessageItem(isSentByMe = true)
-                    }
-
-                    item {
-                        MessageItem(isSentByMe = true)
+                    items(messages) { message ->
+                        MessageItem(message = message)
                     }
 
                 }
@@ -108,7 +82,14 @@ fun HomeScreen(navController: NavController) {
                         },
                         modifier = Modifier.weight(1f).padding(2.dp)
                     )
-                    FloatingActionButton(onClick = {}, modifier = Modifier.size(56.dp)) {
+                    FloatingActionButton(
+                        onClick = {
+                            if (messageText.isNotBlank()) {
+                                MessageDataSource.sendMessage(message = messageText)
+                                messageText = ""
+                            }
+                        }, modifier = Modifier.size(56.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Send,
                             contentDescription = null,
